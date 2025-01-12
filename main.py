@@ -8,7 +8,6 @@ with open("text.txt", "r") as file:
     text = file.read()
 # print(text)
 nlp = spacy.load("en_core_web_sm")
-doc = nlp(text)
 
 def sanitize(text):
     sanitized = []
@@ -31,7 +30,6 @@ def get_tokens(doc, sanitize):
     return tokens
 
 #get tokens
-tokens = get_tokens(doc, sanitize)
 
 #get frequecies
 def get_normalized_freq(tokens):
@@ -44,7 +42,6 @@ def get_normalized_freq(tokens):
 
     return freqs
 
-freqs = get_normalized_freq(tokens)
 
 #get sentence scores
 def get_sentence_scores(doc, freqs, sanitize):
@@ -57,14 +54,23 @@ def get_sentence_scores(doc, freqs, sanitize):
 
     return sentence_scores
 
-sentence_scores = get_sentence_scores(doc, freqs, sanitize)
 
 def get_summary(sentence_scores, n):
     summary = nlargest(n, sentence_scores, key=sentence_scores.get)
     return "".join(summary)
 
-summary = get_summary(sentence_scores, 3)
-print(summary)
 
+def handle_summary(text):
+    print("summarizing:",text)
+    doc = nlp(text)
+    tokens = get_tokens(doc, sanitize)
+    freqs = get_normalized_freq(tokens)
+    sentence_scores = get_sentence_scores(doc, freqs, sanitize)
+    num_sentences = max(1, len(sentence_scores) // 3)
+    summary = get_summary(sentence_scores, num_sentences)
+    print("summarized:", summary)
+    return summary
+
+# handle_summary(text)
 
 
