@@ -12,11 +12,9 @@ nlp = spacy.load("en_core_web_sm")
 def sanitize(text):
     sanitized = []
     punctuations = set(list(punctuation+'\n'))
-
     for letter in text:
         if letter not in punctuations:
             sanitized.append(letter)
-
     return "".join(sanitized)
 
 def get_tokens(doc, sanitize):
@@ -26,7 +24,6 @@ def get_tokens(doc, sanitize):
         if text in stop_words: continue
         sanitized = sanitize(text)
         if sanitized: tokens.append(sanitized)
-
     return tokens
 
 #get tokens
@@ -72,5 +69,3 @@ def handle_summary(text):
     return summary
 
 # handle_summary(text)
-
-
