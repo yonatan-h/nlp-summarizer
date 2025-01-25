@@ -24,6 +24,7 @@ sentencepiece==0.2.0
 setuptools==70.0.0
 sympy==1.13.1
 tokenizers==0.21.0
+--find-links https://download.pytorch.org/whl/torch_stable.html
 torch==2.5.1+cpu
 torchaudio==2.5.1+cpu
 torchvision==0.20.1+cpu
