@@ -22,9 +22,12 @@ regex==2024.11.6
 requests==2.32.3
 safetensors==0.5.2
 sentencepiece==0.2.0
-sympy==1.13.3
+setuptools==70.0.0
+sympy==1.13.1
 tokenizers==0.21.0
 torch==2.5.1+cpu
+torchaudio==2.5.1+cpu
+torchvision==0.20.1+cpu
 tqdm==4.67.1
 transformers==4.48.1
 typing_extensions==4.12.2
