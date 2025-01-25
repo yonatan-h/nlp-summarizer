@@ -1,71 +1,45 @@
-import spacy
-from collections import Counter, defaultdict
-from heapq import nlargest
-from spacy.lang.en.stop_words import STOP_WORDS as stop_words
-from string import punctuation
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, get_linear_schedule_with_warmup
+from torch.optim import AdamW
+import torch
+import gc
+import time
 
-with open("text.txt", "r") as file:
-    text = file.read()
-# print(text)
-nlp = spacy.load("en_core_web_sm")
+tokenizer = AutoTokenizer.from_pretrained('google/mt5-small')
+model = AutoModelForSeq2SeqLM.from_pretrained('yonatan-h/amharic-summarizer')
 
-def sanitize(text):
-    sanitized = []
-    punctuations = set(list(punctuation+'\n'))
-    for letter in text:
-        if letter not in punctuations:
-            sanitized.append(letter)
-    return "".join(sanitized)
+text_len = 512 #ideally 512 
+summary_len = 128 #ideally 128
+batch_size = 8 # 64, 24,16, 8 depending on gpu usage
+epochs = 30 # 10, 5, 1 depending on time
+learning_rate = 2e-5 #2e-5, 1e-4 if not converging quickly
+warmup_fraction = 0.05 #5%, 10%
 
-def get_tokens(doc, sanitize):
-    tokens = []
-    for token in doc:
-        text = token.text.lower().strip()
-        if text in stop_words: continue
-        sanitized = sanitize(text)
-        if sanitized: tokens.append(sanitized)
-    return tokens
+def encode(text, length):
+    encoded = tokenizer.encode(
+        text, return_tensors='pt', padding="max_length", max_length=length, truncation=True
+    )
+    return encoded[0]
 
-#get tokens
+def decode(encoded):
+    decoded = tokenizer.decode(encoded)
+    return decoded
+    
 
-#get frequecies
-def get_normalized_freq(tokens):
-    counts = Counter(tokens)
-    freqs = defaultdict(lambda: 0.0)
-    max_freq = max(counts.values())
+def summarize(text, max_len=summary_len, model=model, text_len=text_len):
+    encoded_in = encode(text, text_len)
 
-    for token in counts:
-        freqs[token] = counts[token]/max_freq
-
-    return freqs
-
-
-#get sentence scores
-def get_sentence_scores(doc, freqs, sanitize):
-    sentence_scores = defaultdict(lambda: 0.0)
-
-    for sentence in doc.sents:
-        for token in sentence:
-            text = sanitize(token.text)
-            sentence_scores[sentence.text] += freqs[text]
-
-    return sentence_scores
-
-
-def get_summary(sentence_scores, n):
-    summary = nlargest(n, sentence_scores, key=sentence_scores.get)
-    return "".join(summary)
-
+    encoded_out = model.generate(
+        encoded_in.unsqueeze(0),
+        
+        min_length=1,  # 10, 20, 30, or experiment based on your dataset
+        max_length=max_len,  # 100, 150, 200, or adjust depending on summary length
+        no_repeat_ngram_size=2,  # 1, 2, 3 (to avoid repeating n-grams)
+        num_beams = 10,
+        early_stopping=True
+        
+)
+    decoded = decode(encoded_out[0])
+    return decoded
 
 def handle_summary(text):
-    print("summarizing:",text)
-    doc = nlp(text)
-    tokens = get_tokens(doc, sanitize)
-    freqs = get_normalized_freq(tokens)
-    sentence_scores = get_sentence_scores(doc, freqs, sanitize)
-    num_sentences = max(1, len(sentence_scores) // 3)
-    summary = get_summary(sentence_scores, num_sentences)
-    print("summarized:", summary)
-    return summary
-
-# handle_summary(text)
+    return summarize(text)
